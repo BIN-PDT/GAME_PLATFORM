@@ -8,12 +8,25 @@ class Sprite(pygame.sprite.Sprite):
         self.rect = self.image.get_frect(topleft=pos)
 
 
-class Player(Sprite):
-    def __init__(self, pos, groups, collision_sprites):
-        surf = pygame.Surface((40, 80))
-        super().__init__(pos, surf, groups)
+class AnimatedSprite(Sprite):
+    def __init__(self, pos, frames, groups):
+        self.frames = frames
+        self.frame_index = 0
+        self.animation_speed = 10
+        super().__init__(pos, self.frames[0], groups)
+
+    def animate(self, dt):
+        self.frame_index += self.animation_speed * dt
+        self.frame_index %= len(self.frames)
+        self.image = self.frames[int(self.frame_index)]
+
+
+class Player(AnimatedSprite):
+    def __init__(self, pos, frames, groups, collision_sprites):
+        super().__init__(pos, frames, groups)
         # MOVEMENT.
         self.direction, self.speed = pygame.Vector2(), 400
+        self.flip = False
         # COLLISION.
         self.collision_sprite = collision_sprites
         # GRAVITY.
@@ -64,7 +77,40 @@ class Player(Sprite):
             else False
         )
 
+    def animate(self, dt):
+        # PLAYER IS RUNNING.
+        if self.direction.x:
+            self.frame_index += self.animation_speed * dt
+            self.frame_index %= len(self.frames)
+            self.flip = self.direction.x < 0
+        # PLAYER IS IDLING.
+        else:
+            self.frame_index = 0
+        # PLAYER IS JUMPING.
+        if not self.on_floor:
+            self.frame_index = 1
+
+        surf = self.frames[int(self.frame_index)]
+        self.image = pygame.transform.flip(surf, self.flip, False)
+
     def update(self, dt):
         self.check_on_floor()
         self.input()
         self.move(dt)
+        self.animate(dt)
+
+
+class Bee(AnimatedSprite):
+    def __init__(self, pos, frames, groups):
+        super().__init__(pos, frames, groups)
+
+    def update(self, dt):
+        self.animate(dt)
+
+
+class Worm(AnimatedSprite):
+    def __init__(self, pos, frames, groups):
+        super().__init__(pos, frames, groups)
+
+    def update(self, dt):
+        self.animate(dt)
