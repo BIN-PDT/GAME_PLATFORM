@@ -1,3 +1,6 @@
+from math import sin
+from random import randint
+
 from settings import *
 from timers import Timer
 
@@ -147,17 +150,59 @@ class Player(AnimatedSprite):
         self.animate(dt)
 
 
-class Bee(AnimatedSprite):
+class Enemy(AnimatedSprite):
     def __init__(self, pos, frames, groups):
         super().__init__(pos, frames, groups)
+        # TIMER.
+        self.death_timer = Timer(200, self.kill)
+
+    def destroy(self):
+        self.death_timer.activate()
+        self.image = pygame.mask.from_surface(self.image).to_surface()
+        self.image.set_colorkey("black")
 
     def update(self, dt):
-        self.animate(dt)
+        self.death_timer.update()
+        if not self.death_timer:
+            self.move(dt)
+            self.animate(dt)
+        self.constraint()
 
 
-class Worm(AnimatedSprite):
-    def __init__(self, pos, frames, groups):
+class Bee(Enemy):
+    def __init__(self, pos, frames, groups, speed):
         super().__init__(pos, frames, groups)
+        # MOVEMENT.
+        self.speed = speed
+        self.amplitude = randint(500, 600)
+        self.frequency = randint(300, 600)
 
-    def update(self, dt):
-        self.animate(dt)
+    def move(self, dt):
+        self.rect.x -= self.speed * dt
+        self.rect.y += (
+            sin(pygame.time.get_ticks() / self.frequency) * self.amplitude * dt
+        )
+
+    def constraint(self):
+        if self.rect.right < 0:
+            self.kill()
+
+
+class Worm(Enemy):
+    def __init__(self, limit_rect, frames, groups):
+        super().__init__((0, 0), frames, groups)
+        self.rect.bottomleft = limit_rect.bottomleft
+        # MOVEMENT.
+        self.direction = 1
+        self.speed = randint(150, 200)
+        self.limit_rect = limit_rect
+
+    def move(self, dt):
+        self.rect.x += self.direction * self.speed * dt
+
+    def constraint(self):
+        if not self.limit_rect.contains(self.rect):
+            self.direction *= -1
+            self.frames = [
+                pygame.transform.flip(frame, True, False) for frame in self.frames
+            ]
