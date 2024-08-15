@@ -1,7 +1,9 @@
+from random import randint
 from settings import *
 from supports import *
-from sprites import Sprite, Player, Bee, Worm
+from sprites import Sprite, Player, Bee, Worm, Bullet, Fire
 from groups import AllSprites
+from timers import Timer
 
 
 class Game:
@@ -13,6 +15,9 @@ class Game:
         # GROUPS.
         self.all_sprites = AllSprites()
         self.collision_sprites = pygame.sprite.Group()
+        self.bullet_sprites = pygame.sprite.Group()
+        # TIMERS.
+        self.bee_timer = Timer(200, self.spawn_bee, True, True)
 
         self.load_assets()
         self.setup()
@@ -45,9 +50,29 @@ class Game:
                     frames=self.player_frames,
                     groups=self.all_sprites,
                     collision_sprites=self.collision_sprites,
+                    create_bullet=self.fire_bullet,
                 )
-        Bee((500, 600), self.bee_frames, self.all_sprites)
         Worm((700, 600), self.worm_frames, self.all_sprites)
+
+    def fire_bullet(self, pos, direction):
+        x = pos[0] + (35 if direction == 1 else -35 - self.bullet_surf.get_width())
+
+        Bullet(
+            pos=(x, pos[1]),
+            direction=direction,
+            surf=self.bullet_surf,
+            groups=(self.all_sprites, self.bullet_sprites),
+        )
+        Fire(
+            pos=pos,
+            surf=self.fire_surf,
+            groups=self.all_sprites,
+            player=self.player,
+        )
+
+    def spawn_bee(self):
+        pos = randint(300, 600), randint(600, 700)
+        Bee(pos, self.bee_frames, self.all_sprites)
 
     def run(self):
         while True:
@@ -59,6 +84,7 @@ class Game:
                     exit()
             # UPDATE.
             self.all_sprites.update(dt)
+            self.bee_timer.update()
             # DRAW.
             self.screen.fill(BG_COLOR)
             self.all_sprites.draw(self.player)

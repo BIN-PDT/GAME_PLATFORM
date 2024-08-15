@@ -1,4 +1,5 @@
 from settings import *
+from timers import Timer
 
 
 class Sprite(pygame.sprite.Sprite):
@@ -21,8 +22,46 @@ class AnimatedSprite(Sprite):
         self.image = self.frames[int(self.frame_index)]
 
 
+class Bullet(Sprite):
+    def __init__(self, pos, direction, surf, groups):
+        # MOVEMENT.
+        self.direction, self.speed = direction, 850
+        # ADJUSTMENT.
+        surf = pygame.transform.flip(surf, self.direction == -1, False)
+
+        super().__init__(pos, surf, groups)
+
+    def update(self, dt):
+        self.rect.x += self.speed * self.direction * dt
+
+
+class Fire(Sprite):
+    def __init__(self, pos, surf, groups, player):
+        super().__init__(pos, surf, groups)
+        # ADJUSTMENT.
+        self.player = player
+        self.flip = self.player.flip
+        self.y_offset = pygame.math.Vector2(0, 8)
+        if self.player.flip:
+            self.image = pygame.transform.flip(self.image, True, False)
+            self.rect.midright = self.player.rect.midleft + self.y_offset
+        else:
+            self.rect.midleft = self.player.rect.midright + self.y_offset
+        # TIMER.
+        self.live_timer = Timer(100, self.kill, autostart=True)
+
+    def update(self, _):
+        self.live_timer.update()
+        if self.player.flip:
+            self.rect.midright = self.player.rect.midleft + self.y_offset
+        else:
+            self.rect.midleft = self.player.rect.midright + self.y_offset
+        if self.flip != self.player.flip:
+            self.kill()
+
+
 class Player(AnimatedSprite):
-    def __init__(self, pos, frames, groups, collision_sprites):
+    def __init__(self, pos, frames, groups, collision_sprites, create_bullet):
         super().__init__(pos, frames, groups)
         # MOVEMENT.
         self.direction, self.speed = pygame.Vector2(), 400
@@ -32,6 +71,9 @@ class Player(AnimatedSprite):
         # GRAVITY.
         self.gravity = 50
         self.on_floor = False
+        # SHOOTING.
+        self.shoot_timer = Timer(500)
+        self.create_bullet = create_bullet
 
     def input(self):
         keys = pygame.key.get_pressed()
@@ -39,7 +81,11 @@ class Player(AnimatedSprite):
         self.direction.x = int(keys[pygame.K_RIGHT]) - int(keys[pygame.K_LEFT])
         # JUMP.
         if self.on_floor and keys[pygame.K_SPACE]:
-            self.direction.y -= 20
+            self.direction.y = -20
+        # SHOOT.
+        if not self.shoot_timer and keys[pygame.K_s]:
+            self.create_bullet(self.rect.center, -1 if self.flip else 1)
+            self.shoot_timer.activate()
 
     def move(self, dt):
         # HORIZONTAL.
@@ -94,6 +140,7 @@ class Player(AnimatedSprite):
         self.image = pygame.transform.flip(surf, self.flip, False)
 
     def update(self, dt):
+        self.shoot_timer.update()
         self.check_on_floor()
         self.input()
         self.move(dt)
