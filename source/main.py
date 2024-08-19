@@ -5,6 +5,7 @@ from supports import *
 from sprites import Sprite, Player, Bee, Worm, Bullet, Fire
 from groups import AllSprites
 from timers import Timer
+from overworld import Overwolrd
 
 
 class Game:
@@ -19,11 +20,14 @@ class Game:
         self.bullet_sprites = pygame.sprite.Group()
         self.enemy_sprites = pygame.sprite.Group()
         # TIMERS.
-        self.bee_timer = Timer(200, self.spawn_bee, True, True)
+        self.death_timer = Timer(2500, self.switch_mode)
+        self.bee_timer = Timer(500, self.spawn_bee, True, True)
         # LOAD DATA.
         self.load_assets()
-        self.setup()
-        # MUSIC.
+        # OVERWORLD.
+        self.in_overworld = True
+        self.overworld = Overwolrd(self.switch_mode, self.worm_frames, self.bee_frames)
+        # BACKGROUND MUSIC.
         self.sounds["music"].play(-1)
 
     def load_assets(self):
@@ -101,12 +105,31 @@ class Game:
                 bullet.kill()
                 for sprite in collided_sprites:
                     sprite.destroy()
-        # ENEMY & PLAYER.
-        if pygame.sprite.spritecollide(
-            self.player, self.enemy_sprites, False, pygame.sprite.collide_mask
+        # ENEMY & PLAYER & MAP.
+        if self.player.groups() and (
+            pygame.sprite.spritecollide(
+                self.player, self.enemy_sprites, False, pygame.sprite.collide_mask
+            )
+            or self.player.rect.top >= self.level_height + 500
         ):
-            pygame.quit()
-            exit()
+            self.player.kill()
+            self.sounds["music"].stop()
+            self.sounds["game_over"].play()
+            self.death_timer.activate()
+
+    def switch_mode(self):
+        self.in_overworld = not self.in_overworld
+
+        if not self.in_overworld:
+            # RESET LEVEL.
+            self.all_sprites.empty()
+            self.collision_sprites.empty()
+            self.bullet_sprites.empty()
+            self.enemy_sprites.empty()
+            self.setup()
+        else:
+            # RESTART MUSIC.
+            self.sounds["music"].play(-1)
 
     def run(self):
         while True:
@@ -116,13 +139,18 @@ class Game:
                 if event.type == pygame.QUIT:
                     pygame.quit()
                     exit()
-            # UPDATE.
-            self.check_collision()
-            self.all_sprites.update(dt)
-            self.bee_timer.update()
-            # DRAW.
+            # GAME LOGIC.
             self.screen.fill(BG_COLOR)
-            self.all_sprites.draw(self.player)
+            if not self.in_overworld:
+                # UPDATE.
+                self.check_collision()
+                self.bee_timer.update()
+                self.death_timer.update()
+                self.all_sprites.update(dt)
+                # DRAW.
+                self.all_sprites.draw(self.player)
+            else:
+                self.overworld.run(dt)
             pygame.display.update()
 
 
