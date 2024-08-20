@@ -1,6 +1,10 @@
 # PLATFORM GAME
 
+![](https://github.com/BIN-PDT/GAME_PLATFORM/blob/main/public/START_STATE.png)
+
 ![](https://github.com/BIN-PDT/GAME_PLATFORM/blob/main/public/INTRODUCTION.png)
+
+![](https://github.com/BIN-PDT/GAME_PLATFORM/blob/main/public/END_STATE.png)
 
 <p align="justify">
     <em>
