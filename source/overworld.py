@@ -64,7 +64,7 @@ class Overwolrd:
                 )
         # FOREGROUND.
         self.font = pygame.font.Font(join("font", "dogicapixelbold.otf"), 28)
-        self.fg_surf = self.font.render("PRESS ENTER TO PLAY!", False, "black")
+        self.fg_surf = self.font.render("PRESS ENTER TO PLAY", False, "black")
         self.fg_rect = self.fg_surf.get_frect(
             center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
         )

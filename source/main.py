@@ -41,6 +41,7 @@ class Game:
         self.sounds = import_sounds("audio")
 
     def setup(self):
+        # BACKGROUND.
         tmx_map = load_pygame(join("data", "maps", "world.tmx"))
         self.level_width = tmx_map.width * TILE_SIZE
         self.level_height = tmx_map.height * TILE_SIZE
@@ -68,6 +69,12 @@ class Game:
                     frames=self.worm_frames,
                     groups=(self.all_sprites, self.enemy_sprites),
                 )
+        # FOREGROUND.
+        self.font = pygame.font.Font(join("font", "dogicapixelbold.otf"), 28)
+        self.fg_surf = self.font.render("GAME OVER", False, "black")
+        self.fg_rect = self.fg_surf.get_frect(
+            center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2)
+        )
 
     def fire_bullet(self, pos, direction):
         x = pos[0] + (35 if direction == 1 else -35 - self.bullet_surf.get_width())
@@ -149,6 +156,8 @@ class Game:
                 self.all_sprites.update(dt)
                 # DRAW.
                 self.all_sprites.draw(self.player)
+                if self.death_timer.is_active:
+                    self.screen.blit(self.fg_surf, self.fg_rect)
             else:
                 self.overworld.run(dt)
             pygame.display.update()
